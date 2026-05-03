@@ -1,0 +1,113 @@
+---
+import { wars } from '../data/wars';
+---
+<section class="toolbar">
+  <input id="search" type="search" placeholder="搜尋戰役、人物、地點、經文…" />
+  <select id="period">
+    <option value="all">全部時期</option>
+    <option value="patriarchs">先祖時期</option>
+    <option value="exodus">出埃及 / 曠野</option>
+    <option value="conquest">征服迦南</option>
+    <option value="judges">士師時期</option>
+    <option value="kingdom">王國時期</option>
+  </select>
+  <button id="reset">重設</button>
+</section>
+<section class="layout">
+  <aside class="war-list" id="warList"></aside>
+  <article class="detail" id="detail"></article>
+</section>
+
+<script define:vars={{ wars }}>
+  let selectedId = wars[0].id;
+  let leafletMap;
+
+  const listEl = document.getElementById('warList');
+  const detailEl = document.getElementById('detail');
+  const searchEl = document.getElementById('search');
+  const periodEl = document.getElementById('period');
+  const resetEl = document.getElementById('reset');
+
+  const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+
+  function filteredWars() {
+    const q = searchEl.value.trim().toLowerCase();
+    const period = periodEl.value;
+    return wars.filter(w => {
+      const text = [w.title, w.ref, w.time, w.place, w.people, w.summary, ...w.lessons].join(' ').toLowerCase();
+      return (period === 'all' || w.period === period) && (!q || text.includes(q));
+    });
+  }
+
+  function renderList() {
+    const filtered = filteredWars();
+    if (!filtered.find(w => w.id === selectedId) && filtered[0]) selectedId = filtered[0].id;
+    listEl.innerHTML = filtered.map(w => `
+      <button class="war-card ${w.id === selectedId ? 'active' : ''}" data-id="${escapeHtml(w.id)}">
+        <h3>${escapeHtml(w.title)}<span class="badge">${escapeHtml(w.time)}</span></h3>
+        <div class="meta">${escapeHtml(w.ref)}<br>${escapeHtml(w.place)}</div>
+      </button>
+    `).join('') || '<div class="meta">找不到符合條件的戰役。</div>';
+    listEl.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
+      selectedId = btn.dataset.id;
+      render();
+    }));
+  }
+
+  function renderDetail() {
+    const w = wars.find(x => x.id === selectedId) || wars[0];
+    detailEl.innerHTML = `
+      <h2>${escapeHtml(w.title)}</h2>
+      <div class="scripture">${escapeHtml(w.ref)}</div>
+      <p class="summary">${escapeHtml(w.summary)}</p>
+      <div class="grid">
+        <div class="info"><b>時期</b>${escapeHtml(w.time)}</div>
+        <div class="info"><b>地點</b>${escapeHtml(w.place)}</div>
+        <div class="info"><b>主要人物</b>${escapeHtml(w.people)}</div>
+      </div>
+      <section class="flow">
+        <h3>戰爭流程</h3>
+        <div class="steps">${w.steps.map((s, i) => `
+          <div class="step"><div class="num">${i + 1}</div><div><div class="step-title">${escapeHtml(s[0])}</div><div class="step-body">${escapeHtml(s[1])}</div></div></div>`).join('')}
+        </div>
+      </section>
+      <section class="lessons">
+        <h3>重要信仰功課</h3>
+        <div class="chips">${w.lessons.map(l => `<span class="chip">${escapeHtml(l)}</span>`).join('')}</div>
+      </section>
+      <section class="map-panel">
+        <h3>OpenStreetMap 地圖</h3>
+        <div id="leafletMap" class="mini-map"></div>
+        <div class="map-note">${escapeHtml(w.map.note)}</div>
+      </section>
+      <div class="map">閱讀建議：先讀完整章節，再對照「背景 → 危機 → 神的話／介入 → 行動 → 結果 → 屬靈功課」六個層次觀察。</div>
+    `;
+    updateMap(w);
+  }
+
+  async function updateMap(w) {
+    const el = document.getElementById('leafletMap');
+    if (!el) return;
+    const L = await import('leaflet');
+    if (leafletMap) {
+      leafletMap.remove();
+      leafletMap = undefined;
+    }
+    leafletMap = L.map(el, { scrollWheelZoom: false });
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 18,
+      attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(leafletMap);
+    const latlngs = w.map.points.map(p => [p.lat, p.lng]);
+    w.map.points.forEach(p => L.marker([p.lat, p.lng]).addTo(leafletMap).bindPopup(p.label));
+    if (latlngs.length > 1) L.polyline(latlngs, { color: '#fbbf24', weight: 4, dashArray: '8 8' }).addTo(leafletMap);
+    leafletMap.fitBounds(latlngs, { padding: [28, 28], maxZoom: 9 });
+    setTimeout(() => leafletMap && leafletMap.invalidateSize(), 80);
+  }
+
+  function render() { renderList(); renderDetail(); }
+  searchEl.addEventListener('input', render);
+  periodEl.addEventListener('change', render);
+  resetEl.addEventListener('click', () => { searchEl.value = ''; periodEl.value = 'all'; selectedId = wars[0].id; render(); });
+  render();
+</script>

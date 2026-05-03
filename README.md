@@ -1,22 +1,34 @@
 # Bible Old Testament Wars
 
-互動式網頁：呈現聖經舊約著名戰爭的流程、重要事件、地點與信仰功課。
+互動式靜態網站：呈現聖經舊約著名戰爭的流程、重要事件、地點與信仰功課。
 
-## Features
+## Tech Stack
 
-- 純前端，無後端
-- 舊約 9 場代表性戰役
-- 搜尋與時期篩選
-- 戰爭流程步驟
-- OpenStreetMap / Leaflet 互動地圖
-- 地點 marker 與路線示意
+- Astro
+- TypeScript
+- Leaflet + OpenStreetMap
+- GitHub Pages
 
-## Usage
-
-直接用瀏覽器開啟：
+## Development
 
 ```bash
-open index.html
+pnpm install
+pnpm dev
 ```
 
-> 地圖功能需要網路連線以載入 Leaflet CDN 與 OpenStreetMap 圖磚。
+## Build
+
+```bash
+pnpm build
+pnpm preview
+```
+
+## Deploy
+
+Push to `main` triggers GitHub Pages deployment via `.github/workflows/deploy.yml`.
+
+Production URL after Pages is enabled:
+
+https://vibe-tjc.github.io/bible-old-testament-wars/
+
+> 地圖功能需要網路連線以載入 OpenStreetMap 圖磚。
