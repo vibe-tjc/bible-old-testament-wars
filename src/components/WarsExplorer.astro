@@ -23,7 +23,21 @@ const warsJson = JSON.stringify(wars);
 
 <script>
   import L from 'leaflet';
+  import markerIcon2xUrl from 'leaflet/dist/images/marker-icon-2x.png?url';
+  import markerIconUrl from 'leaflet/dist/images/marker-icon.png?url';
+  import markerShadowUrl from 'leaflet/dist/images/marker-shadow.png?url';
   import type { WarEvent } from '../data/wars';
+
+  // Leaflet's default marker icon URLs are detected from CSS at runtime.
+  // With Astro/Vite on GitHub Pages subpaths, that can resolve to a wrong
+  // relative URL and produce marker-icon 404s. Import the assets explicitly so
+  // Vite rewrites them with the configured base path.
+  delete (L.Icon.Default.prototype as L.Icon.Default & { _getIconUrl?: unknown })._getIconUrl;
+  L.Icon.Default.mergeOptions({
+    iconRetinaUrl: markerIcon2xUrl,
+    iconUrl: markerIconUrl,
+    shadowUrl: markerShadowUrl,
+  });
 
   const wars = JSON.parse(document.getElementById('wars-data')?.textContent || '[]') as WarEvent[];
   let selectedId = wars[0]?.id;
