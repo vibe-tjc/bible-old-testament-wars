@@ -1,5 +1,7 @@
 ---
 import { wars } from '../data/wars';
+
+const warsJson = JSON.stringify(wars);
 ---
 <section class="toolbar">
   <input id="search" type="search" placeholder="搜尋戰役、人物、地點、經文…" />
@@ -17,18 +19,23 @@ import { wars } from '../data/wars';
   <aside class="war-list" id="warList"></aside>
   <article class="detail" id="detail"></article>
 </section>
+<script is:inline id="wars-data" type="application/json" set:html={warsJson}></script>
 
-<script define:vars={{ wars }}>
-  let selectedId = wars[0].id;
-  let leafletMap;
+<script>
+  import L from 'leaflet';
+  import type { WarEvent } from '../data/wars';
 
-  const listEl = document.getElementById('warList');
-  const detailEl = document.getElementById('detail');
-  const searchEl = document.getElementById('search');
-  const periodEl = document.getElementById('period');
-  const resetEl = document.getElementById('reset');
+  const wars = JSON.parse(document.getElementById('wars-data')?.textContent || '[]') as WarEvent[];
+  let selectedId = wars[0]?.id;
+  let leafletMap: L.Map | undefined;
 
-  const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c]));
+  const listEl = document.getElementById('warList') as HTMLElement;
+  const detailEl = document.getElementById('detail') as HTMLElement;
+  const searchEl = document.getElementById('search') as HTMLInputElement;
+  const periodEl = document.getElementById('period') as HTMLSelectElement;
+  const resetEl = document.getElementById('reset') as HTMLButtonElement;
+
+  const escapeHtml = (value: unknown) => String(value).replace(/[&<>'"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c] || c));
 
   function filteredWars() {
     const q = searchEl.value.trim().toLowerCase();
@@ -49,7 +56,7 @@ import { wars } from '../data/wars';
       </button>
     `).join('') || '<div class="meta">找不到符合條件的戰役。</div>';
     listEl.querySelectorAll('button').forEach(btn => btn.addEventListener('click', () => {
-      selectedId = btn.dataset.id;
+      selectedId = (btn as HTMLButtonElement).dataset.id || selectedId;
       render();
     }));
   }
@@ -85,10 +92,9 @@ import { wars } from '../data/wars';
     updateMap(w);
   }
 
-  async function updateMap(w) {
+  function updateMap(w: WarEvent) {
     const el = document.getElementById('leafletMap');
     if (!el) return;
-    const L = await import('leaflet');
     if (leafletMap) {
       leafletMap.remove();
       leafletMap = undefined;
@@ -98,8 +104,8 @@ import { wars } from '../data/wars';
       maxZoom: 18,
       attribution: '&copy; OpenStreetMap contributors'
     }).addTo(leafletMap);
-    const latlngs = w.map.points.map(p => [p.lat, p.lng]);
-    w.map.points.forEach(p => L.marker([p.lat, p.lng]).addTo(leafletMap).bindPopup(p.label));
+    const latlngs = w.map.points.map(p => [p.lat, p.lng] as L.LatLngTuple);
+    w.map.points.forEach(p => L.marker([p.lat, p.lng]).addTo(leafletMap!).bindPopup(p.label));
     if (latlngs.length > 1) L.polyline(latlngs, { color: '#fbbf24', weight: 4, dashArray: '8 8' }).addTo(leafletMap);
     leafletMap.fitBounds(latlngs, { padding: [28, 28], maxZoom: 9 });
     setTimeout(() => leafletMap && leafletMap.invalidateSize(), 80);
