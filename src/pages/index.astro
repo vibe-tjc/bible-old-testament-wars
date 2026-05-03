@@ -1,0 +1,23 @@
+---
+import WarsExplorer from '../components/WarsExplorer.astro';
+import '../styles/global.css';
+---
+<!doctype html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="互動式整理聖經舊約著名戰爭流程、重要事件與地圖。" />
+    <title>舊約著名戰爭流程與重要事件</title>
+  </head>
+  <body>
+    <header>
+      <h1>舊約著名戰爭流程與重要事件</h1>
+      <p class="subtitle">互動式整理舊約中幾場具代表性的戰役：從背景、危機、神的介入、戰爭流程到信仰功課。純靜態網站，使用 Astro + OpenStreetMap。</p>
+    </header>
+    <main>
+      <WarsExplorer />
+    </main>
+    <footer>經文摘要以和合本常見譯語概述；建議搭配完整聖經章節閱讀。地圖為近似示意，非精確考古定位。</footer>
+  </body>
+</html>
